@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kernel Café</title>
+  <meta name="description" content="An interactive, kawaii playground for learning image convolution and kernels.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌸</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero">
+  <svg class="mascot" viewBox="0 0 120 110" aria-hidden="true">
+    <path d="M18 52 L24 8 L52 30 Z" fill="#FFB3CB" stroke="#5A3E4B" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M102 52 L96 8 L68 30 Z" fill="#FFB3CB" stroke="#5A3E4B" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M27 40 L29 20 L42 31 Z" fill="#FF8FB1"/>
+    <path d="M93 40 L91 20 L78 31 Z" fill="#FF8FB1"/>
+    <ellipse cx="60" cy="64" rx="48" ry="40" fill="#FFF7FA" stroke="#5A3E4B" stroke-width="3"/>
+    <ellipse cx="42" cy="62" rx="6" ry="7.5" fill="#5A3E4B"/>
+    <ellipse cx="78" cy="62" rx="6" ry="7.5" fill="#5A3E4B"/>
+    <circle cx="44" cy="59" r="2.2" fill="#fff"/>
+    <circle cx="80" cy="59" r="2.2" fill="#fff"/>
+    <ellipse cx="30" cy="76" rx="8" ry="5" fill="#FFC2D6"/>
+    <ellipse cx="90" cy="76" rx="8" ry="5" fill="#FFC2D6"/>
+    <path d="M56 72 Q60 76 64 72" fill="none" stroke="#5A3E4B" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M52 76 Q56 81 60 76 Q64 81 68 76" fill="none" stroke="#5A3E4B" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+  <div>
+    <h1>Kernel Café</h1>
+    <p class="tagline">a cozy little lab for learning image convolution ♡</p>
+  </div>
+</header>
+
+<main>
+  <section class="card intro">
+    <h2><span class="ico">📖</span> What is convolution?</h2>
+    <p>
+      <b>Convolution</b> is how computers “look” at images. A tiny grid of numbers called a
+      <b>kernel</b> (or <b>filter</b>) slides across the picture one pixel at a time. At every stop,
+      each kernel number is multiplied by the pixel underneath it, and all those products are added
+      up. That single sum becomes one pixel of a brand-new image called the <b>feature map</b>.
+      Change the numbers and you change what the filter notices: it can <b>blur</b>, <b>sharpen</b>,
+      or light up <b>edges</b>. This one simple operation is the building block of
+      Convolutional Neural Networks (CNNs)!
+    </p>
+    <div class="pills" aria-label="Keywords (hover or tap for a definition)">
+      <span class="pill" tabindex="0" data-tip="A small grid of weights (like 3×3) that slides over the image.">kernel</span>
+      <span class="pill" tabindex="0" data-tip="Slide → multiply → add up. Repeat for every pixel.">convolution</span>
+      <span class="pill" tabindex="0" data-tip="The output image made of all the sums.">feature map</span>
+      <span class="pill" tabindex="0" data-tip="How many pixels the kernel jumps each step. Stride 2 halves the output size.">stride</span>
+      <span class="pill" tabindex="0" data-tip="Fake pixels added around the border so the kernel can sit on edge pixels.">padding</span>
+      <span class="pill" tabindex="0" data-tip="Dividing by the kernel's sum so the image doesn't get brighter or darker.">normalization</span>
+      <span class="pill" tabindex="0" data-tip="A kernel that measures brightness change in one direction to find edges.">Sobel</span>
+      <span class="pill" tabindex="0" data-tip="A blur that gives close neighbours more weight than far ones.">Gaussian blur</span>
+    </div>
+  </section>
+
+  <section class="card howto">
+    <h2><span class="ico">✨</span> How to use</h2>
+    <ol class="steps">
+      <li><span class="num">1</span><span>Pick a sample image 🖼️ or upload your own.</span></li>
+      <li><span class="num">2</span><span>Choose a kernel preset 🧮, or type your own numbers.</span></li>
+      <li><span class="num">3</span><span>Press <b>▶ Play</b> to watch it slide, or hover any pixel to see its math.</span></li>
+      <li><span class="num">4</span><span>Hit <b>⚡ Instant</b> to filter the whole image at once.</span></li>
+    </ol>
+  </section>
+
+  <section class="lab">
+    <div class="card panel">
+      <h2><span class="ico">🖼️</span> Input</h2>
+      <div class="stage" id="inStage">
+        <canvas id="inCanvas"></canvas>
+        <canvas id="inOverlay" class="overlay" width="512" height="512"></canvas>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="row">
+        <label class="btn soft">📤 Upload
+          <input type="file" accept="image/*" id="upload" hidden>
+        </label>
+        <label class="toggle" title="Uses a 256×256 image. Best with ⚡ Instant.">
+          <input type="checkbox" id="bigImg"><span class="knob"></span> Big image
+        </label>
+      </div>
+    </div>
+
+    <div class="card panel kernel-panel">
+      <h2><span class="ico">🧮</span> Kernel</h2>
+      <div class="seg" role="group" aria-label="Kernel size">
+        <button class="seg-btn active" data-k="3">3 × 3</button>
+        <button class="seg-btn" data-k="5">5 × 5</button>
+      </div>
+      <div class="kgrid" id="kernelGrid"></div>
+      <p class="ksum" id="kSum"></p>
+      <label class="toggle">
+        <input type="checkbox" id="normalize"><span class="knob"></span> Normalize (÷ sum)
+      </label>
+      <div class="presets" id="presets"></div>
+      <p class="hint" id="presetHint"></p>
+    </div>
+
+    <div class="card panel" id="outCard">
+      <h2><span class="ico">🎀</span> Output <small>(feature map)</small></h2>
+      <div class="stage" id="outStage">
+        <canvas id="outCanvas"></canvas>
+        <canvas id="outOverlay" class="overlay" width="512" height="512"></canvas>
+      </div>
+      <label class="field">Show values as
+        <select id="displayMode">
+          <option value="clamp">Clamp 0–255</option>
+          <option value="abs">Absolute value</option>
+          <option value="rescale">Rescale min–max</option>
+        </select>
+      </label>
+      <p class="stats" id="stats"></p>
+      <p class="warn" id="warn" hidden></p>
+    </div>
+  </section>
+
+  <section class="card controls">
+    <div class="transport">
+      <button class="btn round" id="backBtn" title="Step back (←)">⏮</button>
+      <button class="btn round big" id="playBtn" title="Play / pause (space)">▶</button>
+      <button class="btn round" id="stepBtn" title="Step forward (→)">⏭</button>
+      <button class="btn soft" id="resetBtn" title="Clear the output">↺ Reset</button>
+      <button class="btn primary" id="instantBtn">⚡ Instant</button>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div class="settings">
+      <label class="field">Speed
+        <span class="speed"><span>🐢</span><input type="range" id="speed" min="0" max="9" value="3"><span>🐇</span></span>
+        <small id="speedLabel"></small>
+      </label>
+      <label class="field">Padding
+        <select id="padding">
+          <option value="zero">Zero (black border)</option>
+          <option value="replicate">Replicate edge</option>
+          <option value="none">None (output shrinks)</option>
+        </select>
+      </label>
+      <label class="field">Stride
+        <select id="stride">
+          <option value="1">1 (every pixel)</option>
+          <option value="2">2 (skip one)</option>
+          <option value="3">3 (skip two)</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="card mathzoom">
+    <h2><span class="ico">🔍</span> Math Zoom</h2>
+    <p class="where" id="mathWhere"></p>
+    <div class="math-row">
+      <figure><div class="mgrid" id="mPatch"></div><figcaption>image patch</figcaption></figure>
+      <span class="op">⊙</span>
+      <figure><div class="mgrid" id="mKernel"></div><figcaption>kernel</figcaption></figure>
+      <span class="op">=</span>
+      <figure><div class="mgrid" id="mProd"></div><figcaption>products</figcaption></figure>
+      <span class="op">→</span>
+      <div class="result" id="mResult"></div>
+    </div>
+    <p class="equation" id="mEq"></p>
+    <details class="note">
+      <summary>ℹ️ psst… a tiny secret for the math nerds</summary>
+      <p>
+        Strictly speaking, true convolution flips the kernel 180° before sliding it. What this app
+        (and almost every deep-learning library) computes is <b>cross-correlation</b>, with no flip.
+        For symmetric kernels like blur, both give the same answer. Formula used here:
+        <code>out(x, y) = Σ<sub>i</sub> Σ<sub>j</sub> K(i, j) · I(x·s + i − p, y·s + j − p)</code>
+        where <i>s</i> = stride and <i>p</i> = padding.
+      </p>
+    </details>
+  </section>
+</main>
+
+<footer>made with 💕 for computer vision class · <span class="kbd">space</span> play/pause · <span class="kbd">← →</span> step</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
